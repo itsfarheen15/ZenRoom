@@ -2,7 +2,7 @@
 
 ## Report privately
 
-Use this repository's **Security → Report a vulnerability** flow when available. Repository maintainers must enable private vulnerability reporting in GitHub settings; this documentation does not enable it. If the option is missing, ask a maintainer for a private reporting channel without disclosing exploit details in a public issue. No response-time guarantee or dedicated security contact is established yet.
+Private vulnerability reporting is enabled. Use [Report a vulnerability](https://github.com/itsfarheen15/ZenRoom/security/advisories/new) or open **Security → Advisories → Report a vulnerability**. Do not disclose exploit details in a public issue. No response-time guarantee is established yet.
 
 Include the affected revision, reproduction steps, impact and a minimal redacted example. Do not send live tokens, passwords, session cookies, private articles or database dumps. Maintainers assess the current default branch; there is no supported-release matrix yet.
 

@@ -1,6 +1,6 @@
 # Contributing
 
-Start with the [README](README.md) to run a local installation with your own credentials. Read [AGENTS.md](AGENTS.md), [MEMORY.md](MEMORY.md) and the relevant [source map](docs/MAP.md) before changing behavior. Use issues for reproducible bugs or focused proposals; use the [security policy](SECURITY.md) for vulnerabilities.
+Start with the [README](README.md) to run a local installation with your own credentials. Use issues for reproducible bugs or focused proposals; use the [security policy](SECURITY.md) for vulnerabilities.
 
 ## Make a focused change
 
@@ -9,7 +9,7 @@ Start with the [README](README.md) to run a local installation with your own cre
 3. Keep provider calls and secrets in Django. Preserve owner isolation, HttpOnly sessions, CSRF, exact CORS, scraper protections and bounded provider requests.
 4. Preserve the three palettes, readable typography, keyboard access, mobile layout, reduced motion and ambient pause. Cards use the responsive CSS grid; do not reintroduce resizing as an incidental change.
 5. Update dependencies and lockfiles together. Add migrations for schema changes and tests for meaningful behavior changes. Use fixtures for tests; do not fabricate live application data.
-6. Update affected user docs, memory, history and map following the project rulebook. Do not include credentials, private user data or tool transcripts.
+6. Update the user documentation affected by your change. Do not include credentials, private user data or tool transcripts.
 
 ## Run checks
 

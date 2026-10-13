@@ -8,7 +8,7 @@ A quiet second-monitor dashboard for developers. Read tech, India and world news
 
 Built with **Next.js and JavaScript/JSX**, Tailwind CSS, Framer Motion, Django REST Framework, PostgreSQL, Celery and Redis. Django handles provider calls and credentials; Redis caches hourly feeds.
 
-[User guide](docs/USER_GUIDE.md) · [API](docs/API.md) · [Architecture](docs/MAP.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[User guide](docs/USER_GUIDE.md) · [API](docs/API.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 Original project code, including the original Canvas 2D galaxy effect, is under [MIT](LICENSE). Dependencies and external content retain their own terms; see [third-party notices](THIRD_PARTY_NOTICES.md).
 
@@ -23,7 +23,7 @@ git clone https://github.com/itsfarheen15/ZenRoom.git
 cd ZenRoom
 ```
 
-If the repository is not public yet, use a fork or source copy you can access. Python 3 is needed only for the configuration helper below; the application runtimes run in containers.
+Python 3 is needed only for the configuration helper below; the application runtimes run in containers.
 
 ### 2. Create your private configuration
 
@@ -55,7 +55,7 @@ Edit root `.env` in your editor:
 | GitHub repositories | Optional `GITHUB_TOKEN` for higher public API quota. Private-repository permissions are unnecessary. |
 | Tasks, links, themes and clock | No external provider account needed. |
 
-Keep Gemini on the Free tier if you want to avoid usage charges. Check [current model availability, quotas and data-use terms](https://ai.google.dev/gemini-api/docs/pricing); free-tier content may be used to improve Google's products. The configured model is `gemini-3.5-flash-lite`; availability varies and a live summary call has not been verified for this repository. There is no paid-model fallback. Hosting and external services have their own terms and limits.
+Keep Gemini on the Free tier if you want to avoid usage charges. Check [current model availability, quotas and data-use terms](https://ai.google.dev/gemini-api/docs/pricing); free-tier content may be used to improve Google's products. The configured model is `gemini-3.5-flash-lite`; confirm its availability and free-tier quota in your account. There is no paid-model fallback. Hosting and external services have their own terms and limits.
 
 You can leave provider keys blank to try local tasks and links. Missing keys produce an unavailable state, not demo content. The GitHub widget can use unauthenticated public REST search. **The GitHub token, Gemini key and news key are not the Django workspace token.**
 
@@ -120,9 +120,8 @@ The [user guide](docs/USER_GUIDE.md) covers everyday use, troubleshooting, backu
 
 ## Development and deployment
 
-See [Contributing](CONTRIBUTING.md) for checks and local development, and [Deployment](docs/DEPLOYMENT.md) for production requirements. The supplied Compose file runs development servers. The [Checks workflow](.github/workflows/checks.yml) runs backend tests and frontend lint/build/browser tests without provider secrets. Hosted deployments and backups need separate setup. The workflow has not yet been run on GitHub.
+See [Contributing](CONTRIBUTING.md) for checks and local development, and [Deployment](docs/DEPLOYMENT.md) for production requirements. The supplied Compose file runs development servers. The [Checks workflow](.github/workflows/checks.yml) runs backend tests and frontend lint/build/browser tests without provider secrets. Hosted deployments and backups need separate setup.
 
-For agent-assisted work, start with [AGENTS.md](AGENTS.md), then [MEMORY.md](MEMORY.md) and the [source map](docs/MAP.md). [History](docs/HISTORY.md) records changes and verification evidence. Documentation updates do not constitute a fresh live-provider test.
 
 ## License and credits
 

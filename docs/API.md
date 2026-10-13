@@ -1,6 +1,6 @@
 # API and data behavior
 
-[Setup](../README.md) · [User guide](USER_GUIDE.md) · [Source map](MAP.md)
+[Setup](../README.md) · [User guide](USER_GUIDE.md)
 
 
 Browser requests use Django's database-backed session (`zen_session`, HttpOnly, SameSite=Lax, seven days). `GET /api/session/` returns the current user and masked CSRF token with no-store headers; `POST` exchanges the existing Django access token, rotates the session and CSRF token; `DELETE` logs out and invalidates the session. Both unsafe methods enforce CSRF even when unauthenticated; failed exchanges are capped at 20/minute per client IP. Browser writes send `X-CSRFToken` with `credentials: include`. Exact CORS and CSRF trusted origins permit only `http://localhost:3000`; wildcard origins are disabled. Cookies are Secure when `DJANGO_DEBUG=false` and HTTP-compatible for local development.

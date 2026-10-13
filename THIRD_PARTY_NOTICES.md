@@ -2,11 +2,9 @@
 
 The root [MIT license](LICENSE) covers original Developer Zen Room code and documentation. It does not replace third-party licenses or grant rights to provider content. MIT reference: [Open Source Initiative](https://opensource.org/license/mit).
 
-## Original light tunnel and removed legacy effect
+## Original galaxy effect
 
 `frontend/src/components/light-tunnel.jsx` is an original Canvas 2D implementation written on 2026-10-13 under the root MIT grant, with an SPDX identifier and project copyright notice. Its current galaxy variation uses scattered stars, nebula gradients, straight falling meteors and gentle pointer parallax. No React Bits implementation was opened or copied while writing this replacement. It is not a port of the removed shader.
-
-The former `lightfall/Lightfall.jsx` and its CSS have been removed, together with the unused OGL dependency. The old component's source comment attributed it to React Bits but lacked a verifiable source revision/license. The current tree no longer distributes that source. Existing Git history may still contain it; replacing files does not relicense or erase earlier commits. Review historical distribution before publishing; no history rewrite was performed.
 
 ## Dependencies and assets
 

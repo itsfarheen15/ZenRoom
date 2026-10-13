@@ -16,3 +16,13 @@ celerybeat-schedule*
 frontend/test-results/
 frontend/playwright-report/
 *.tsbuildinfo
+
+# Local agent context and development records
+/AGENTS.md
+/MEMORY.md
+/frontend/AGENTS.md
+/frontend/README.md
+/docs/HISTORY.md
+/docs/MAP.md
+/docs/MAINTAINERS.md
+/docs/architecture.*

@@ -8,7 +8,7 @@ List checks actually run and their results. Separate mocked tests from live API 
 
 ## Handoff
 
-- [ ] Relevant setup/API docs and memory/history/map updated
+- [ ] Relevant user-facing setup/API docs updated
 - [ ] Secrets and private data excluded from code, logs and screenshots
 - [ ] Source and license recorded for new third-party code/assets
 - [ ] UI changes checked across themes, narrow screens and reduced motion (if applicable)
