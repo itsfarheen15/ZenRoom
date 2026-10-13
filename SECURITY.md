@@ -16,6 +16,12 @@ A Django API token can establish a browser session and can authenticate CLI requ
 
 Browser authentication uses a seven-day HttpOnly, SameSite=Lax Django session, masked CSRF tokens and exact allowed origins. HTTPS enables Secure cookies when debug is off. Task/link queries enforce ownership; disconnect and expiry clear private UI caches. Redis feed caches are shared, and summary caches are user-scoped. Admin grants broad access to trusted staff and shares the browser session; it is not a tenant-scoped dashboard.
 
+Next.js issues a fresh CSP script nonce for each dynamically rendered page. Production blocks unapproved inline scripts and eval; inline styles remain allowed for motion. Summary and weather quotas use atomic Redis counters. These controls supplement authentication and safe rendering.
+
+Weather shares rounded coordinates with Open-Meteo through Django after explicit location permission. The browser keeps coordinates in memory; Redis caches weather by approximate area. Do not record location request bodies in logs or monitoring tools.
+
 The article scraper checks public addresses, redirects and response bounds. Keep these protections when changing networking code. Development servers, debug output and local Compose configuration are not suitable for public deployment. See [deployment requirements](docs/DEPLOYMENT.md), review dependency advisories and run Django's deployment checks after configuring a production environment.
+
+Full-project transfer archives may include `.env`, Git history and database records. Keep them private; they are not public release bundles.
 
 Logs, Playwright traces and screenshots can contain account information. Inspect and redact them before sharing. The repository does not promise a formal security audit.

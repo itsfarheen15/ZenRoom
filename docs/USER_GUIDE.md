@@ -40,11 +40,22 @@ mkdir -p ../zenroom-backups
 
 Check the command succeeded and the file is nonempty. Keep a separate secure copy of `.env`; a database backup is not a key backup. PostgreSQL contains tasks, links, accounts and sessions. News cache can be rebuilt.
 
-Test restore into a separate disposable installation/database first. The following restores into the database of the Compose project you run it from; use it only against an empty target you intend to populate:
+On a new laptop, clone the repository and copy your private `.env` and database dump securely. Install and start Docker. Host virtual environments and `node_modules` may not work on a different machine; rebuild the containers. Browser cookies, theme preferences and location permission do not move with the database, so reconnect the new browser.
+
+Test restore into a separate disposable installation/database first. For a fresh target, start only PostgreSQL and Redis and wait until both are healthy:
+
+```bash
+docker compose up -d db redis
+docker compose ps
+```
+
+Keep the backend stopped until the import finishes, because backend startup creates tables through migrations. The following restores into the database of the Compose project you run it from; use it only against an empty target you intend to populate:
 
 ```bash
 docker compose exec -T db sh -c 'pg_restore --exit-on-error --no-owner -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < ../zenroom-backups/zenroom.dump
 ```
+
+After a successful import, run `docker compose up -d --build` to start the full stack. Keep the original installation and backups until you have checked the restored records.
 
 Do not restore over your working database without a recovery plan. Check accounts and records after restore before switching users to that installation.
 
@@ -60,6 +71,7 @@ Do not restore over your working database without a recovery plan. Check account
 | India shows fewer than five stories | Relevance and deduplication may leave fewer results. The provider title-search outage limits coverage; unrelated stories are not used to fill slots. |
 | News marked stale | The last refresh failed. The UI can retain last-good data up to 24 hours. Inspect worker errors before forcing more calls. |
 | Summary fails | Check Gemini key/model/account quota; the article may lack scrapeable text. No paid fallback runs. |
+| Weather unavailable | Connect first, allow browser/OS location access, and use HTTPS or localhost. Expand Weather details to retry; repeated requests can hit quota limits. |
 | GitHub unavailable | Check worker/network/rate limits. An optional backend GitHub token raises quota; no private repo scope is needed. |
 | Database login fails after editing `.env` | Existing volumes retain their original database password. Restore the matching env value or rotate the database role password. |
 | Port already allocated | Stop the older local server or conflicting container. Changing frontend origin also requires backend CORS/CSRF configuration. |

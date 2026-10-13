@@ -1,8 +1,8 @@
 # Developer Zen Room
 
-![Dashboard UI Screenshot](./docs/hero.png)
+![Dark dashboard with clock, local weather, news, GitHub repositories, tasks and quick links](./docs/hero.png)
 
-*Preview from browser tests with fictional fixture data. Your installation starts with your own account and feeds.*
+*Current dashboard with fictional test news, repositories, tasks and weather. Your installation uses your own account and feeds.*
 
 A quiet second-monitor dashboard for developers. Read tech, India and world news; get three-point article summaries; find rising GitHub repositories; manage tasks and quick links. Includes opt-in local weather with condition-based effects, a clock, headline ticker, Dark/Light/Eye Comfort themes, ambient pause and reduced-motion support. Cards use a responsive, non-resizable grid.
 
@@ -55,6 +55,7 @@ Edit root `.env` in your editor:
 | News | Your `FREENEWS_API_KEY` from [FreeNewsApi.io](https://www.freenewsapi.io/). This is the sole news provider. |
 | AI summaries | Your `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/api-keys). Choose a structured-output model available to your account with `GEMINI_MODEL`. |
 | GitHub repositories | Optional `GITHUB_TOKEN` for higher public API quota. Private-repository permissions are unnecessary. |
+| Local weather | No API key. Allow location access after connecting; Django calls Open-Meteo. |
 | Tasks, links, themes and clock | No external provider account needed. |
 
 Keep Gemini on the Free tier if you want to avoid usage charges. Check [current model availability, quotas and data-use terms](https://ai.google.dev/gemini-api/docs/pricing); free-tier content may be used to improve Google's products. The configured model is `gemini-3.5-flash-lite`; confirm its availability and free-tier quota in your account. There is no paid-model fallback. Hosting and external services have their own terms and limits.
@@ -123,7 +124,6 @@ The [user guide](docs/USER_GUIDE.md) covers everyday use, troubleshooting, backu
 ## Development and deployment
 
 See [Contributing](CONTRIBUTING.md) for checks and local development, and [Deployment](docs/DEPLOYMENT.md) for production requirements. The supplied Compose file runs development servers. The [Checks workflow](.github/workflows/checks.yml) runs backend tests and frontend lint/build/browser tests without provider secrets. Hosted deployments and backups need separate setup.
-
 
 ## License and credits
 
