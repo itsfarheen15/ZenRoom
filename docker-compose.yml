@@ -1,0 +1,90 @@
+x-python: &python
+  build: ./backend
+  env_file: .env
+  environment: &python-env
+    POSTGRES_HOST: db
+    POSTGRES_PORT: "5432"
+    REDIS_CACHE_URL: redis://redis:6379/1
+    CELERY_BROKER_URL: redis://redis:6379/0
+  volumes:
+    - ./backend:/app
+  init: true
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-developer_zen}
+      POSTGRES_USER: ${POSTGRES_USER:-zen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  backend:
+    <<: *python
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/admin/login/', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+  worker:
+    <<: *python
+    command: ["sh", "-c", "python manage.py refresh_feeds && exec celery -A config worker --loglevel=INFO --concurrency=2"]
+    depends_on:
+      backend:
+        condition: service_healthy
+  beat:
+    <<: *python
+    command: ["celery", "-A", "config", "beat", "--loglevel=INFO", "--schedule=/state/celerybeat-schedule"]
+    volumes:
+      - ./backend:/app
+      - beat_data:/state
+    depends_on:
+      backend:
+        condition: service_healthy
+      worker:
+        condition: service_started
+  frontend:
+    build: ./frontend
+    environment:
+      NEXT_PUBLIC_DJANGO_API_URL: ${NEXT_PUBLIC_DJANGO_API_URL:-http://localhost:8000/api}
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    init: true
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  beat_data:

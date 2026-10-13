@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Developer Zen Room",
+    "subtitle": "Local runtime \u00b7 Django owns all provider calls",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Next.js browser",
+      "sublabel": "Theme + session cookie",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        190,
+        70
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Django / DRF",
+      "sublabel": "Session / CSRF + CRUD",
+      "pos": [
+        360,
+        260
+      ],
+      "size": [
+        190,
+        70
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "Records / users / sessions",
+      "pos": [
+        680,
+        260
+      ],
+      "size": [
+        190,
+        70
+      ]
+    },
+    {
+      "id": "gemini",
+      "type": "external",
+      "label": "Gemini",
+      "sublabel": "Three-point summaries",
+      "pos": [
+        360,
+        40
+      ],
+      "size": [
+        190,
+        70
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "messagebus",
+      "label": "Redis",
+      "sublabel": "DB 0 broker / DB 1 cache",
+      "pos": [
+        360,
+        500
+      ],
+      "size": [
+        190,
+        70
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Celery worker",
+      "sublabel": "Hourly feed refresh",
+      "pos": [
+        680,
+        500
+      ],
+      "size": [
+        190,
+        70
+      ]
+    },
+    {
+      "id": "beat",
+      "type": "backend",
+      "label": "Celery Beat",
+      "sublabel": "One scheduler",
+      "pos": [
+        40,
+        500
+      ],
+      "size": [
+        190,
+        70
+      ]
+    },
+    {
+      "id": "feeds",
+      "type": "external",
+      "label": "Feed providers",
+      "sublabel": "GitHub / FreeNewsApi.io",
+      "pos": [
+        1000,
+        500
+      ],
+      "size": [
+        190,
+        70
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "browser",
+      "to": "api",
+      "label": "Cookie + CSRF"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "label": "ORM"
+    },
+    {
+      "from": "api",
+      "to": "gemini",
+      "label": "Article text"
+    },
+    {
+      "from": "api",
+      "to": "redis",
+      "label": "Read cache",
+      "labelAt": [
+        455,
+        405
+      ]
+    },
+    {
+      "from": "beat",
+      "to": "redis",
+      "label": "Enqueue hourly"
+    },
+    {
+      "from": "redis",
+      "to": "worker",
+      "label": "Deliver jobs"
+    },
+    {
+      "from": "worker",
+      "to": "feeds",
+      "label": "Fetch feeds"
+    }
+  ]
+}
