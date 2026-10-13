@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Django command-line management utility for Developer Zen Room.
+"""
 import os
 import sys
 

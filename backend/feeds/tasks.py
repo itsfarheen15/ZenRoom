@@ -33,6 +33,10 @@ def safe_url(value):
 
 
 def retry_provider(task, exc):
+    """
+    Applies bounded exponential backoff on transient upstream provider errors (429 or 5xx).
+    Client errors (< 500, excluding 403/429) are logged and skipped without retrying.
+    """
     response = getattr(exc, "response", None)
     code = response.status_code if response is not None else None
     if code is not None and code not in (403, 429) and code < 500:
@@ -49,12 +53,18 @@ def retry_provider(task, exc):
 
 @shared_task(bind=True, max_retries=3)
 def fetch_github_trending(self):
+    """
+    Fetches rising GitHub repositories. Approximates 'trending' (which has no REST endpoint)
+    by searching repositories created in the past 7 days, ranked by stars.
+    """
     lock = "feed:github:lock"
+    # Distributed lock prevents overlapping runs if a previous run is delayed.
     if not cache.add(lock, True, 180):
         return {"status": "already_running"}
     try:
         since = (timezone.now() - timedelta(days=7)).date().isoformat()
         headers = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+        # GITHUB_TOKEN is optional; GitHub search has a separate, more restrictive quota.
         if settings.GITHUB_TOKEN:
             headers["Authorization"] = f"Bearer {settings.GITHUB_TOKEN}"
         response = requests.get(
@@ -84,12 +94,17 @@ def fetch_github_trending(self):
 
 @shared_task(bind=True, max_retries=3)
 def fetch_news(self, category):
+    """
+    Ingests category headlines from FreeNewsApi.io.
+    Maintains a 55s monotonic budget to comfortably finish before Celery soft time limit (90s).
+    """
     if category not in NEWS_CATEGORIES:
         raise ValueError("Unknown news category.")
     if not settings.FREENEWS_API_KEY:
         logger.warning("FREENEWS_API_KEY is not configured; skipping news refresh.")
         return {"status": "not_configured"}
     lock = f"feed:news:{category}:lock"
+    # Distributed lock avoids multiple workers refreshing the same category simultaneously.
     if not cache.add(lock, True, 180):
         return {"status": "already_running"}
     try:
@@ -125,6 +140,7 @@ def fetch_news(self, category):
                     raise
                 if not isinstance(detail, dict) or detail.get("uuid") != article_id:
                     raise ValueError("Invalid news detail.")
+                # Cache article details for 1 hour to prevent redundant lookups.
                 cache.set(detail_key, detail, 3600)
             url = safe_url(detail.get("original_url"))
             title = detail.get("title")
@@ -139,6 +155,7 @@ def fetch_news(self, category):
                 "source": publisher if isinstance(publisher, str) and publisher else "Unknown source",
                 "published_at": detail.get("published_at"),
             })
+            # Cache clean article text for subsequent Gemini summarization.
             store_article_text(url, detail.get("body"))
             if len(items) == 5:
                 break

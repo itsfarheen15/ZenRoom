@@ -1,3 +1,14 @@
+"""
+Unit and integration tests for dashboard multi-tenant resources and session auth.
+
+Covers:
+- Task and QuickLink CRUD workflows.
+- Owner isolation (cross-user access returns 404, preventing information leaks).
+- Server-side owner pinning during record creation.
+- Date grouping logic (Today vs Upcoming vs Pending in IST).
+- Token-to-session exchange, rate limiting, and secure logout.
+"""
+
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -9,6 +20,7 @@ from .models import QuickLink, Task
 
 
 class DashboardAPITests(APITestCase):
+
     def setUp(self):
         self.user = get_user_model().objects.create_user(username="developer")
         self.other = get_user_model().objects.create_user(username="other")

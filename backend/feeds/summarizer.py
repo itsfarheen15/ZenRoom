@@ -26,6 +26,7 @@ class SummaryUnavailable(RuntimeError):
 
 
 class ArticleSummary(BaseModel):
+    # Enforce exactly 3 concise points via Pydantic schema validation.
     bullet_points: list[str] = Field(min_length=3, max_length=3)
 
     @field_validator("bullet_points")
@@ -37,10 +38,17 @@ class ArticleSummary(BaseModel):
 
 
 def resolve_public_url(url):
+    """
+    Validates article URLs against Server-Side Request Forgery (SSRF) and DNS rebinding:
+    1. Rejects non-HTTP(S) schemes, credentials in URLs, and non-standard ports.
+    2. Resolves DNS and checks ALL returned addresses against private/reserved/multicast ranges.
+    3. Pins the connection target to the validated IP while retaining original hostname for TLS.
+    """
     try:
         parsed = urlsplit(url)
         hostname = parsed.hostname
         port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        # Block userinfo, non-standard ports, backslashes, and control characters to prevent parser divergence.
         if (
             parsed.scheme not in ("http", "https") or not hostname
             or parsed.username is not None or parsed.password is not None
@@ -55,12 +63,14 @@ def resolve_public_url(url):
         raise ArticleError("The article host could not be resolved.") from exc
     if not addresses:
         raise ArticleError("The article host could not be resolved.")
+    # Check all resolved IPs; reject private (RFC 1918), loopback (127.0.0.1), link-local, or IPv4-mapped addresses.
     for address in addresses:
         ip = ipaddress.ip_address(address[4][0])
         if not ip.is_global or getattr(ip, "ipv4_mapped", None) is not None or ip.is_multicast:
             raise UnsafeArticleURL("Private and reserved network addresses are not allowed.")
     ip = addresses[0][4][0]
     authority = f"[{ip}]" if ":" in ip else ip
+    # Pinned URL forces requests to connect directly to the verified IP, mitigating DNS rebinding (TOCTOU).
     pinned_url = urlunsplit((parsed.scheme, authority, parsed.path or "/", parsed.query, ""))
     return parsed, pinned_url
 
@@ -73,26 +83,35 @@ class PinnedHTTPSAdapter(HTTPAdapter):
         super().__init__(max_retries=0)
 
     def init_poolmanager(self, *args, **kwargs):
+        # Enforces SNI and certificate verification against original domain even when connecting to pinned IP.
         kwargs.update(assert_hostname=self.hostname, server_hostname=self.hostname)
         return super().init_poolmanager(*args, **kwargs)
 
 
 def scrape_article(url):
+    """
+    Downloads and extracts article plain text safely:
+    - Evaluates each redirect hop against SSRF rules (at most 3 redirects before a final response).
+    - Limits payload size to 2MB to prevent decompression bombs.
+    - Disables environment proxies (trust_env=False) to ensure connections use validated IPs.
+    """
     started = time.monotonic()
     for _ in range(4):
         if time.monotonic() - started > 25:
             raise ArticleError("The article took too long to download.")
         parsed, pinned_url = resolve_public_url(url)
         with requests.Session() as session:
-            # Ignore proxy environment variables; the connection must use the checked IP.
+            # Ignore ambient proxy environment variables; the connection must use the checked IP.
             session.trust_env = False
             if parsed.scheme == "https":
                 session.mount("https://", PinnedHTTPSAdapter(parsed.hostname))
             try:
+                # Stream content to abort early if response exceeds the 2MB safety threshold.
                 with session.get(
                     pinned_url, headers={"Host": parsed.netloc, "User-Agent": "DeveloperZenRoom/1.0 (article summary)", "Accept": "text/html"},
                     stream=True, allow_redirects=False, timeout=(4, 10),
                 ) as response:
+                    # Manually handle redirects so target URLs re-run through SSRF validation.
                     if response.status_code in (301, 302, 303, 307, 308):
                         location = response.headers.get("Location")
                         if not location:
@@ -111,6 +130,7 @@ def scrape_article(url):
             except requests.RequestException as exc:
                 raise ArticleError("The article could not be read. Try opening the original source.") from exc
         soup = BeautifulSoup(bytes(content), "html.parser")
+        # Strip navigation, boilerplate, styles, and scripts before extracting article text.
         for element in soup.select("script, style, nav, header, footer, aside, form, noscript"):
             element.decompose()
         main = soup.find("article") or soup.find("main") or soup.body or soup
@@ -123,11 +143,16 @@ def scrape_article(url):
 
 
 def summarize_text(text):
+    """
+    Summarizes article text into 3 concise bullet points using Gemini structured outputs.
+    The prompt treats article text as untrusted; this is not a prompt-injection guarantee.
+    """
     if not settings.GEMINI_API_KEY:
         raise SummaryUnavailable("Article summaries have not been configured yet.")
     try:
         with genai.Client(
             api_key=settings.GEMINI_API_KEY, vertexai=False,
+            # Single attempt with 35s timeout; no silent paid-model or multiple retry fallbacks.
             http_options=types.HttpOptions(timeout=35000, retry_options=types.HttpRetryOptions(attempts=1)),
         ) as client:
             response = client.models.generate_content(

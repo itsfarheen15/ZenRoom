@@ -4,13 +4,15 @@
 
 *Preview from browser tests with fictional fixture data. Your installation starts with your own account and feeds.*
 
-A quiet second-monitor dashboard for developers. Read tech, India and world news; get three-point article summaries; find rising GitHub repositories; manage tasks and quick links. Includes a clock, headline ticker, Dark/Light/Eye Comfort themes, ambient pause and reduced-motion support. Cards use a responsive, non-resizable grid.
+A quiet second-monitor dashboard for developers. Read tech, India and world news; get three-point article summaries; find rising GitHub repositories; manage tasks and quick links. Includes opt-in local weather with condition-based effects, a clock, headline ticker, Dark/Light/Eye Comfort themes, ambient pause and reduced-motion support. Cards use a responsive, non-resizable grid.
 
-Built with **Next.js and JavaScript/JSX**, Tailwind CSS, Framer Motion, Django REST Framework, PostgreSQL, Celery and Redis. Django handles provider calls and credentials; Redis caches hourly feeds.
+Built with **Next.js and JavaScript/JSX**, Tailwind CSS, Framer Motion, Django REST Framework, PostgreSQL, Celery and Redis. Django handles provider calls and credentials; Redis caches hourly feeds and atomically enforces summary/weather quotas. Next.js uses a nonce-based Content Security Policy and dynamic rendering.
 
 [User guide](docs/USER_GUIDE.md) · [API](docs/API.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 Original project code, including the original Canvas 2D galaxy effect, is under [MIT](LICENSE). Dependencies and external content retain their own terms; see [third-party notices](THIRD_PARTY_NOTICES.md).
+
+Weather uses [Open-Meteo](https://open-meteo.com/) without an API key. Connect your workspace, choose **Use my location**, and allow browser location access. Weather sits beside the main clock; expand **Weather details** for humidity, wind and refresh controls. Current model-based conditions refresh every 15 minutes; location requires HTTPS or localhost. The free endpoint is for non-commercial use; see [terms](https://open-meteo.com/en/terms).
 
 ## Run locally
 

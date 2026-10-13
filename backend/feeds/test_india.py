@@ -1,3 +1,14 @@
+"""
+Unit tests for India-specific news relevance filtering, deduplication, and fallback.
+
+Covers:
+- Subject relevance based on title/incipit content rather than publisher country tag.
+- Ambiguous name filtering (e.g. Indiana, Indianapolis).
+- 72-hour recency window enforcement.
+- Syndicated wire deduplication via headline similarity.
+- Fallback to global news scan on provider 500 errors with transparent disclosure.
+"""
+
 from datetime import timedelta
 from unittest.mock import patch
 from uuid import UUID
@@ -13,6 +24,7 @@ from .tasks import fetch_news
 
 @override_settings(FREENEWS_API_KEY="test")
 class IndiaSubjectTests(SimpleTestCase):
+
     def setUp(self):
         cache.clear()
 

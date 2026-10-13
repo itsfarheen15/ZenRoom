@@ -26,3 +26,6 @@ frontend/playwright-report/
 /docs/MAP.md
 /docs/MAINTAINERS.md
 /docs/architecture.*
+
+# Local learning handbook and diagram catalog
+/docs/learning/

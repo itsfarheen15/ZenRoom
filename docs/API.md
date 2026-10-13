@@ -26,3 +26,13 @@ Hourly Celery jobs write fresh Redis entries for 3,600 seconds and last-good cop
 
 Summaries first use server-cached FreeNewsApi article text, then fall back to the existing public-HTML scraper when text is unavailable. Gemini returns exactly three validated points. Full article bodies are never included in news API responses. SSRF safeguards validate every redirect and resolved IP, pin connections, verify TLS hostnames and disable environment proxies. Limits: 2 MB, three redirects, bounded timeouts, 24,000 text characters, 10 summary requests/user/hour; successful results cached per user/model/URL for one hour. No paywall bypass or JavaScript rendering. Quota failures return an actionable error.
 
+
+## Local weather
+
+`POST /api/weather/` requires authentication and session CSRF. JSON: `{"latitude": 19.08, "longitude": 72.88}`. Finite numeric ranges are ±90/±180; Django rounds to two decimals. POST keeps coordinates out of URL/access-log query strings. Do not log request bodies. Response is `no-store`, containing `current` (`temperature_2m`, `apparent_temperature`, `relative_humidity_2m`, `weather_code`, `is_day`, `wind_speed_10m`, `precipitation`), `observed_at`, `fetched_at`, `source`, and `stale`. Units: °C, %, km/h, mm; timestamps are UTC ISO strings.
+
+Weather is fetched on demand from a fixed Open-Meteo HTTPS endpoint, unlike the hourly Celery news feeds. Redis shares a hashed rounded-location key: fresh 900s, last-good 7200s, retry lease 30s. Client checks every 15 minutes while visible/online. A deployment-wide two-second provider gate and 9,000/day attempt budget bound free-tier use; endpoint throttle is 30/user/hour. No automatic retries or redirect following; connect/read timeouts 3s/8s. Missing or invalid provider readings return 503 with Retry-After 60, or `stale: true` with last-good data. Invalid coordinates return 400; session writes without CSRF return 403. Existing session expiry/authentication behavior applies. Cache outages return 503.
+
+### Atomic request quotas
+
+Summary (10/user/hour) and weather (30/user/hour) use Redis Lua fixed windows, starting at each user's first admitted request. Checking capacity, incrementing and setting expiry are atomic across workers. Rejected requests do not extend the window; 429 includes `Retry-After`. This replaces DRF's approximate sliding window: bursts spanning a reset may exceed the limit over an arbitrary rolling hour. Counts include invalid requests and cache hits. Redis failures return 503 before contacting a provider. These per-user quotas do not replace provider-wide budgets or upstream abuse protection. Unit tests use a locked local-memory equivalent; production requires Django RedisCache.

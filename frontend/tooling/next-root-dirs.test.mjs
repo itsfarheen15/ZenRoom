@@ -1,3 +1,9 @@
+/**
+ * Verification test for the scoped package override in package.json:
+ * Overrides fast-glob with tinyglobby in @next/eslint-plugin-next to patch the high-severity
+ * ReDoS vulnerability in braces without requiring an unstable Next.js downgrade.
+ * Ensures globSync directory discovery still functions identically for ESLint.
+ */
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

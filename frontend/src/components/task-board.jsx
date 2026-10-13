@@ -9,9 +9,12 @@ import { WidgetHeading } from "@/components/widget-heading";
 export function TaskBoard() {
     const { userId, request } = useApi();
     const [submitting, setSubmitting] = useState(false);
+    // Track in-flight item IDs to prevent duplicate rapid clicks during PATCH/DELETE.
     const [busy, setBusy] = useState([]);
     const [error, setError] = useState("");
     const reducedMotion = useReducedMotion();
+
+    // Fetches all paginated task pages to assemble the complete list for client-side column grouping.
     const { data, error: loadError, isLoading, mutate } = useSWR(userId ? ["tasks", userId] : null, async () => {
         const tasks = [];
         let page = 1;
@@ -23,13 +26,16 @@ export function TaskBoard() {
             page += 1;
         }
     }, { refreshInterval: 60000 });
+
     const today = todayInIndia();
+    // Partition tasks into Today, Upcoming, and Pending columns based on IST calendar boundaries.
     const groups = [
         { name: "Today", items: data?.filter((task) => task.scheduled_date === today) || [] },
         { name: "Upcoming", items: data?.filter((task) => task.scheduled_date > today && task.status !== "completed") || [] },
         { name: "Pending", items: data?.filter((task) => task.scheduled_date < today && task.status !== "completed") || [] },
     ];
     const done = groups[0].items.filter((task) => task.status === "completed").length;
+
     async function addTask(event) {
         event.preventDefault();
         const form = event.currentTarget;
@@ -43,6 +49,7 @@ export function TaskBoard() {
         setError("");
         try {
             const task = await request("/tasks/", { method: "POST", body: JSON.stringify({ title, scheduled_date: fields.get("date") || today }) });
+            // After server success, append new task into SWR cache without triggering a full reload.
             await mutate((previous) => [...(previous || []), task], { revalidate: false });
             form.reset();
         }
@@ -53,16 +60,19 @@ export function TaskBoard() {
             setSubmitting(false);
         }
     }
+
     async function changeTask(task, remove = false) {
         setBusy((ids) => [...ids, task.id]);
         setError("");
         try {
             if (remove) {
                 await request(`/tasks/${task.id}/`, { method: "DELETE" });
+                // After server success, remove item from local SWR cache.
                 await mutate((previous) => previous?.filter((item) => item.id !== task.id), { revalidate: false });
             }
             else {
                 const updated = await request(`/tasks/${task.id}/`, { method: "PATCH", body: JSON.stringify({ status: task.status === "completed" ? "pending" : "completed" }) });
+                // After server success, update toggled item in local SWR cache.
                 await mutate((previous) => previous?.map((item) => item.id === task.id ? updated : item), { revalidate: false });
             }
         }

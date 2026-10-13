@@ -13,3 +13,7 @@ Node dependencies are declared in `frontend/package.json` and resolved in `front
 Geist and Geist Mono arrive through the `@fontsource-variable` packages. Their font license files remain in those packages. Lucide icons, React, Next.js and other libraries retain their own upstream notices. Docker images include additional operating-system packages with separate licenses.
 
 `docs/hero.png` is a screenshot of this application using fictional browser-test fixtures. It depicts the original MIT galaxy background. News articles, publisher marks, GitHub repository names and external site assets remain the property of their respective owners. The project license does not cover those materials or provider API access.
+
+## Weather data
+
+Weather data is provided by [Open-Meteo](https://open-meteo.com/) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The widget attributes the source; values are rounded for display and weather codes drive original CSS illustrations. The free endpoint is restricted to non-commercial use with provider rate limits; the project's MIT code license does not override [API terms](https://open-meteo.com/en/terms). No weather API key or paid fallback is configured.

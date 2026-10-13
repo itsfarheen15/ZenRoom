@@ -16,6 +16,7 @@ function Frame({ children }) {
     const [error, setError] = useState("");
     const reducedMotion = usePrefersReducedMotion();
     const { userId, checking, sessionMessage, connect, disconnect } = useApi();
+
     async function submit(event) {
         event.preventDefault();
         const form = event.currentTarget;
@@ -34,10 +35,14 @@ function Frame({ children }) {
             setPending(false);
         }
     }
-    return (<MotionConfig reducedMotion="user">
+
+    return (
+      // Framer Motion configuration respects user's OS prefers-reduced-motion setting.
+      <MotionConfig reducedMotion="user">
       <div className="zen-room" data-paused={paused} data-theme={theme}>
         <div className="ambient" aria-hidden="true">
           <div className="ambient-wave wave-one"/><div className="ambient-wave wave-two"/><div className="ambient-wave wave-three"/>
+          {/* Canvas 2D galaxy is mounted only in Dark theme; Light and Comfort palettes omit it to preserve contrast. */}
           {theme === "dark" && <LightTunnel paused={paused} />}
         </div>
         <div className="grid-overlay" aria-hidden="true"/>
@@ -62,12 +67,12 @@ function Frame({ children }) {
           <main id="workspace" tabIndex={-1}>{children}</main>
           <footer className="room-footer"><span><Sparkles size={13}/> Built for a little more headspace.</span><span><i className={userId ? "connected-dot" : ""}/> {userId ? "WORKSPACE CONNECTED" : "YOUR SPACE IS READY"}</span></footer>
         </div>
-        <Modal open={connecting} onClose={() => { if (!pending)
-        setConnecting(false); }} title="CONNECT YOUR WORKSPACE">
+        <Modal open={connecting} onClose={() => { if (!pending) setConnecting(false); }} title="CONNECT YOUR WORKSPACE">
           <h2 className="modal-title">Make yourself at home.</h2>
           <p className="modal-description">Enter your Django access token to load your tasks, links, and feeds. It is exchanged for a secure browser session that survives refresh. Disconnect ends the session; your token is never saved in browser storage.</p>
           <form onSubmit={submit} className="connect-form">
             <label htmlFor="access-token">Access token</label>
+            {/* Request no autocomplete or spellchecking; browser/password-manager behavior can vary. */}
             <input id="access-token" name="token" type="password" required autoComplete="off" spellCheck={false} placeholder="Paste your workspace token" disabled={pending}/>
             {error ? <p className="form-error" role="alert">{error}</p> : null}
             <button className="primary-button" disabled={pending}>{pending ? "Connecting…" : "Connect workspace"}</button>
@@ -76,6 +81,7 @@ function Frame({ children }) {
       </div>
     </MotionConfig>);
 }
+
 export function DashboardFrame({ children }) {
     return <ApiProvider><Frame>{children}</Frame></ApiProvider>;
 }

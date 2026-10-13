@@ -13,6 +13,8 @@ export function QuickLinks() {
     const [pending, setPending] = useState(false);
     const [error, setError] = useState("");
     const reducedMotion = useReducedMotion();
+
+    // Fetches all paginated bookmark pages to assemble the full user bookmark list.
     const { data, error: loadError, isLoading, mutate } = useSWR(userId ? ["links", userId] : null, async () => {
         const links = [];
         let page = 1;
@@ -24,7 +26,9 @@ export function QuickLinks() {
             page += 1;
         }
     });
+
     const link = editing && editing !== "new" ? editing : null;
+
     async function save(event) {
         event.preventDefault();
         const fields = new FormData(event.currentTarget);
@@ -34,6 +38,7 @@ export function QuickLinks() {
             const updated = await request(link ? `/links/${link.id}/` : "/links/", {
                 method: link ? "PATCH" : "POST", body: JSON.stringify({ title: String(fields.get("title")).trim(), url: String(fields.get("url")).trim(), position: Number(fields.get("position")) }),
             });
+            // After server success, update and sort by (position, title) in SWR cache without full refetch.
             await mutate((previous) => [...(previous || []).filter((item) => item.id !== updated.id), updated].sort((a, b) => a.position - b.position || a.title.localeCompare(b.title)), { revalidate: false });
             setEditing(null);
         }
@@ -44,6 +49,7 @@ export function QuickLinks() {
             setPending(false);
         }
     }
+
     async function remove() {
         if (!link)
             return;
@@ -51,6 +57,7 @@ export function QuickLinks() {
         setError("");
         try {
             await request(`/links/${link.id}/`, { method: "DELETE" });
+            // After server success, remove link from in-memory SWR cache.
             await mutate((previous) => previous?.filter((item) => item.id !== link.id), { revalidate: false });
             setEditing(null);
         }
@@ -61,6 +68,7 @@ export function QuickLinks() {
             setPending(false);
         }
     }
+
     return <section className="widget links-widget" aria-labelledby="links-title">
     <div className="links-heading"><WidgetHeading id="links-title" icon={<Link2 size={17}/>} title="Your launchpad" subtitle="Familiar places. One click away."/>{userId ? <button className="text-button" onClick={() => { setError(""); setEditing("new"); }}><Plus size={14}/> Add link</button> : null}</div>
     {data?.length ? <div className="quick-links">{data.map((item) => <motion.div key={item.id} className="quick-link-card" whileHover={reducedMotion ? undefined : { scale: 1.02 }}>

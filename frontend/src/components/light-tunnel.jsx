@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
 const COLORS = ["#c9e6ff", "#a8a0ed", "#8ed7cd"];
+// Deterministic pseudorandom scatter using sine fractional hashing; produces repeatable star distributions.
 const scatter = (seed) => fraction(Math.sin(seed * 73.13 + 11.7) * 10937.3);
 const fraction = (value) => value - Math.floor(value);
 
@@ -25,6 +26,7 @@ export function LightTunnel({ paused = false, className = "" }) {
         let previousTime = 0;
         const pointer = { x: driftRef.current.x, y: driftRef.current.y };
         const moving = !paused && !reducedMotion;
+        // Offscreen canvas pre-renders soft nebula gradients at half resolution to avoid per-frame gradient allocation.
         const clouds = document.createElement("canvas");
         const stars = Array.from({ length: 260 }, (_, index) => ({
             x: scatter(index + 1), y: scatter(index + 421),
@@ -45,6 +47,7 @@ export function LightTunnel({ paused = false, className = "" }) {
             const sky = clouds.getContext("2d");
             if (!sky) return;
             sky.scale(0.5, 0.5);
+            // Three radial nebula glows: violet, teal, and deep indigo.
             for (const [x, y, radius, color] of [
                 [0.72, 0.18, 0.55, "94, 67, 154"],
                 [0.3, 0.5, 0.46, "28, 102, 116"],
@@ -64,10 +67,12 @@ export function LightTunnel({ paused = false, className = "" }) {
             context.clearRect(0, 0, width, height);
             context.globalAlpha = 1;
             context.drawImage(clouds, -12 + drift.x, -12 + drift.y, width + 24, height + 24);
+            // Halve star count on mobile screens (< 640px) to bound fill-rate and draw calls.
             const count = width < 640 ? 130 : stars.length;
             for (const star of stars.slice(0, count)) {
-                // Slow, low-amplitude shimmer keeps the star field restful.
+                // Low-frequency sine wave produces calm, non-distracting stellar shimmer.
                 const shimmer = 0.78 + Math.sin(timeRef.current * 0.35 + star.phase) * 0.12;
+                // Layer depth scales parallax drift distance (layer between 0.3 and 1.0).
                 const x = star.x * width + drift.x * star.layer;
                 const y = star.y * height + drift.y * star.layer;
                 context.globalAlpha = shimmer * (0.25 + star.layer * 0.38);
@@ -75,6 +80,7 @@ export function LightTunnel({ paused = false, className = "" }) {
                 context.beginPath();
                 context.arc(x, y, star.radius, 0, Math.PI * 2);
                 context.fill();
+                // Subdued outer glow for larger stars.
                 if (star.radius > 1.25) {
                     context.globalAlpha *= 0.1;
                     context.beginPath();
@@ -85,11 +91,13 @@ export function LightTunnel({ paused = false, className = "" }) {
             context.lineCap = "round";
             for (const meteor of meteors.slice(0, width < 640 ? 5 : 9)) {
                 const depth = fraction(meteor.phase + timeRef.current * meteor.speed);
+                // Linear downward diagonal trajectory (slope 0.32).
                 const x = meteor.x * (width + height * 0.32) + 60 - depth * (height + 360) * 0.32;
                 const y = -180 + depth * (height + 360);
                 const length = meteor.length * Math.min(1, width / 700);
                 const tailX = x + length * 0.32;
                 const tailY = y - length;
+                // Fade in at top and fade out at bottom smoothly.
                 const fade = Math.min(1, depth * 7, (1 - depth) * 7);
                 const trail = context.createLinearGradient(tailX, tailY, x, y);
                 trail.addColorStop(0, `${meteor.color}00`);
@@ -99,6 +107,7 @@ export function LightTunnel({ paused = false, className = "" }) {
                 context.moveTo(tailX, tailY);
                 context.lineTo(x, y);
                 context.strokeStyle = trail;
+                // Dual-stroke rendering: wide soft glow plus crisp central streak.
                 context.globalAlpha = fade * 0.07;
                 context.lineWidth = 5;
                 context.stroke();
@@ -116,9 +125,12 @@ export function LightTunnel({ paused = false, className = "" }) {
         function tick(now) {
             if (!previousTime) previousTime = now;
             const elapsed = now - previousTime;
+            // Cap rendering to 30fps (33.3ms) to minimize CPU load and laptop battery drain.
             if (elapsed >= 1000 / 30) {
+                // Clamp elapsed time delta to 80ms to prevent visual teleportation on tab wake.
                 timeRef.current += Math.min(elapsed, 80) / 1000;
                 previousTime = now;
+                // Exponential smoothing provides organic cursor tracking without abrupt jerkiness.
                 const easing = 1 - Math.exp(-Math.min(elapsed, 80) / 650);
                 driftRef.current.x += (pointer.x - driftRef.current.x) * easing;
                 driftRef.current.y += (pointer.y - driftRef.current.y) * easing;
@@ -126,15 +138,19 @@ export function LightTunnel({ paused = false, className = "" }) {
             }
             frame = requestAnimationFrame(tick);
         }
+
         function syncAnimation() {
             cancelAnimationFrame(frame);
             previousTime = 0;
+            // Suspend animation loop when tab is hidden or motion is disabled.
             if (moving && !document.hidden) frame = requestAnimationFrame(tick);
         }
+
         function resize() {
             const bounds = canvas.getBoundingClientRect();
             width = bounds.width;
             height = bounds.height;
+            // Cap device pixel ratio at 1.5 to protect high-density screens from GPU overload.
             const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
             canvas.width = Math.round(width * ratio);
             canvas.height = Math.round(height * ratio);
@@ -142,17 +158,23 @@ export function LightTunnel({ paused = false, className = "" }) {
             paintClouds();
             draw();
         }
+
         function move(event) {
+            // Touch interactions do not trigger mouse parallax.
             if (event.pointerType === "touch") return;
             const bounds = canvas.getBoundingClientRect();
+            // Parallax displacement strictly bounded to +/-8px horizontal and +/-6px vertical.
             pointer.x = Math.max(-1, Math.min(1, (event.clientX - bounds.left) / Math.max(width, 1) * 2 - 1)) * 8;
             pointer.y = Math.max(-1, Math.min(1, (event.clientY - bounds.top) / Math.max(height, 1) * 2 - 1)) * 6;
         }
+
         function leave() { pointer.x = 0; pointer.y = 0; }
+
         const observer = new ResizeObserver(resize);
         observer.observe(canvas);
         resize();
         syncAnimation();
+        // Pause animation when the browser tab loses visibility.
         document.addEventListener("visibilitychange", syncAnimation);
         if (moving) {
             window.addEventListener("pointermove", move, { passive: true });

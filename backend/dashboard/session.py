@@ -14,22 +14,33 @@ from rest_framework.authtoken.models import Token
 
 
 class WorkspaceSessionAuthentication(SessionAuthentication):
+    # Overriding authenticate_header prompts DRF to emit HTTP 401 (Unauthorized)
+    # instead of HTTP 403 (Forbidden) on unauthenticated requests.
     def authenticate_header(self, request):
         return "Session"
 
 
 def session_payload(request):
-    return {"user": {"id": request.user.pk, "username": request.user.get_username()}
-            if request.user.is_authenticated else None, "csrf_token": get_token(request),
-            "expired": not request.user.is_authenticated and settings.SESSION_COOKIE_NAME in request.COOKIES}
+    # Returns masked CSRF token and detects when a cookie was presented but is no longer valid.
+    return {
+        "user": {"id": request.user.pk, "username": request.user.get_username()}
+        if request.user.is_authenticated else None,
+        "csrf_token": get_token(request),
+        "expired": not request.user.is_authenticated and settings.SESSION_COOKIE_NAME in request.COOKIES,
+    }
 
 
 @never_cache
 @csrf_protect
 @require_http_methods(["GET", "POST", "DELETE"])
 def workspace_session(request):
+    """
+    Exchanges an API token for a secure HttpOnly session cookie.
+    Guards against brute-force attempts via Redis IP-based rate limiting (20/min).
+    """
     if request.method == "POST":
         key = "session-exchange:" + request.META.get("REMOTE_ADDR", "unknown")
+        # Fixed 60-second window anchored on first attempt via atomic cache.add.
         if cache.add(key, 1, timeout=60):
             attempts = 1
         else:
@@ -44,10 +55,13 @@ def workspace_session(request):
             value = payload.get("token", "") if isinstance(payload, dict) else ""
         except (ValueError, UnicodeDecodeError):
             value = ""
+        # Validate exact 40-character DRF token and ensure user account is active.
         token = Token.objects.select_related("user").filter(key=value).first() if isinstance(value, str) and len(value) == 40 else None
         if token is None or not token.user.is_active:
             return JsonResponse({"detail": "Invalid workspace token. Please reconnect."}, status=401)
+        # login() rotates the session key to prevent session fixation and issues HttpOnly cookie.
         login(request, token.user, backend="django.contrib.auth.backends.ModelBackend")
     elif request.method == "DELETE":
+        # Deletes the PostgreSQL-backed session and clears the cookie.
         logout(request)
     return JsonResponse(session_payload(request))

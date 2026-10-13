@@ -1,3 +1,14 @@
+"""
+Unit tests for external feeds, caching tiers, SSRF mitigations, and Gemini summarization.
+
+Covers:
+- Dual-tier feed cache (1h fresh vs 24h stale fallback).
+- GitHub trending query formatting and payload normalization.
+- Strict SSRF protections: IP validation, private ranges, DNS rebinding TOCTOU defense.
+- Article scraping, body sanitization, and plain-text extraction.
+- Gemini client responses, structured validation, and quota/error handling.
+"""
+
 import socket
 from unittest.mock import patch
 
@@ -15,6 +26,7 @@ from .cache import read_feed, store_feed
 from .summarizer import ArticleError, ArticleSummary, PinnedHTTPSAdapter, SummaryUnavailable, UnsafeArticleURL, resolve_public_url, scrape_article, summarize_text
 from .tasks import fetch_github_trending, fetch_news
 from .freenews import article_text_key, request_data
+
 
 
 def dns(address):

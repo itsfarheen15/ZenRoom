@@ -4,6 +4,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+# Validate request Host headers; Compose separately binds published ports to loopback.
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
 
 INSTALLED_APPS = [
@@ -62,16 +63,21 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
+# IST is the user's primary timezone; task date calculations align with this calendar day.
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Exact credentialed CORS: Wildcards are forbidden when credentials (cookies) are enabled.
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+
+# Dedicated session cookie name avoids collision with other Django instances on localhost.
+# HttpOnly flags prevent XSS access; frontend receives CSRF token via masked session API payload.
 SESSION_COOKIE_NAME = "zen_session"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -85,6 +91,8 @@ CORS_ALLOW_HEADERS = ["accept", "authorization", "content-type", "x-csrftoken"]
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
 REST_FRAMEWORK = {
+    # Session authentication first for browser HttpOnly cookie workflow;
+    # TokenAuthentication retained for CLI/script interoperability.
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "dashboard.session.WorkspaceSessionAuthentication",
         "rest_framework.authentication.TokenAuthentication",
@@ -92,9 +100,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
-    "DEFAULT_THROTTLE_RATES": {"summarize": "10/hour"},
+    "DEFAULT_THROTTLE_RATES": {"summarize": "10/hour", "weather": "30/hour"},
 }
 
+# Redis DB 1 is dedicated to caching; DB 0 is reserved for Celery queue broker below.
+# Explicit socket timeouts prevent slow or unresponsive Redis from hanging web workers.
 CACHES = {"default": {
     "BACKEND": "django.core.cache.backends.redis.RedisCache",
     "LOCATION": os.environ.get("REDIS_CACHE_URL", "redis://127.0.0.1:6379/1"),
@@ -103,6 +113,8 @@ CACHES = {"default": {
     "OPTIONS": {"socket_connect_timeout": 3, "socket_timeout": 3},
 }}
 
+# Background feed ingestion runs via Celery to decouple third-party API latency from user requests.
+# Task results are ignored because workers store payloads directly in the shared Redis cache.
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -121,6 +133,7 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# External provider credentials (server-side only, never leaked to the browser).
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 FREENEWS_API_KEY = os.environ.get("FREENEWS_API_KEY", "")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")

@@ -71,3 +71,11 @@ docker compose exec backend python manage.py refresh_feeds
 ```
 
 Avoid repeated manual refreshes; they consume provider quota. Redact keys, cookies and private content before sharing logs. See [Security](../SECURITY.md) for exposed-token recovery.
+
+## Local weather
+
+Connect your workspace, then select **Use my location** alongside the clock on desktop (stacked on smaller screens). Your browser asks for location permission. Enable OS/browser location services if denied; HTTPS or localhost is required. Use **Update location** after moving. No city is inferred from your IP.
+
+Coordinates are rounded to two decimals (roughly a kilometre), sent in a CSRF-protected POST to Django, and forwarded to Open-Meteo. They are held only in component memory, not browser storage or account records. Reload or reconnect requires selecting your location again. Redis shares weather for the rounded area for 15 minutes and keeps a last-good response for up to two hours. Open-Meteo may retain request logs; see its [privacy policy](https://open-meteo.com/en/terms).
+
+The card shows Celsius, feels-like temperature, humidity, wind in km/h, and the data time in your browser timezone. Conditions come from weather models, not a live local sensor. Sun/moon, drifting clouds, rain, snow and fog match the reported weather code; storms use rain and darker clouds without flashing lightning. Ambient pause and reduced motion stop these decorative effects. Errors retain a clearly labelled last-saved reading when available. Refresh respects the server cache; it does not force a provider call.
